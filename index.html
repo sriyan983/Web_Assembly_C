@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<!-- copy.html -->
+<html>
+  <head></head>
+  <body>
+    <script type="module">
+      (async () => {
+        const memory = new WebAssembly.Memory({ initial: 2 });
+        const response = await fetch('./mylib.wasm');
+        const bytes = await response.arrayBuffer();
+        const { instance } = await WebAssembly.instantiate(bytes, {
+          env: { memory }
+        });
+
+        // Configure shared memory.
+        const view = new Uint8Array(memory.buffer);
+        // Offset as the address of the output buffer
+        const pOutput = instance.exports.__heap_base + 1024;
+    
+        // Read the result.
+        instance.exports.get_url(pOutput);
+
+        var url = decode(view, pOutput);
+        console.log('get_url', url);
+      })();
+
+      // Decode a string from memory starting at address base.
+      const decode = (memory, base) => {
+        let cursor = base;
+        let result = '';
+
+        while (memory[cursor] !== 0) {
+          result += String.fromCharCode(memory[cursor++]);
+        }
+
+        return result;
+      };
+    </script>
+  </body>
+</html>
